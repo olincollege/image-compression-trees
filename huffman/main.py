@@ -1,4 +1,5 @@
 from encoding import encode_image
 
-img_dir = "data/7x7_color.png"
-encode_image(img_dir)
+input_path = "data/dog.JPEG"
+output_path = "data/dog_compressed.txt"
+encode_image(input_path, output_path)

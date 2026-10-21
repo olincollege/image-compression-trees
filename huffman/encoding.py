@@ -2,16 +2,16 @@ from PIL import Image
 
 """
 """
-def encode_image(img_dir):
-    img = Image.open(img_dir).convert('RGB') #'L' for grayscale
-    RGB = split_rgb(img)
-
-    for color in RGB:
-        freqs = map_freqs(color)
-        tree = generate_tree(freqs)
-        codes = generate_codes(tree)
-        print(codes)
+def encode_image(input_path, output_path):
+    img = Image.open(input_path).convert('RGB')
+    pixels = img.getdata()
+    rgb_vals = [color for rgb in pixels for color in rgb]
     
+    freqs = map_freqs(rgb_vals)
+    tree = generate_tree(freqs)
+    codes = generate_codes(tree)
+    encoding = generate_encoded_string(rgb_vals, codes)
+    write_to_file(encoding, output_path)
     
 
 """
@@ -73,3 +73,18 @@ def generate_codes(tree):
                 codes |= subcodes
 
     return codes
+
+
+"""
+"""
+def generate_encoded_string(values, codes):
+    bits = ""
+    for value in values:
+        bits += codes[value]
+    return bits
+
+"""
+"""
+def write_to_file(string, path):
+    with open(path, 'wt') as f:
+        f.write(string)
