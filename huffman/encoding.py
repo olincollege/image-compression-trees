@@ -4,16 +4,13 @@ from PIL import Image
 """
 def encode_image(img_dir):
     img = Image.open(img_dir).convert('RGB') #'L' for grayscale
-    R, G, B = split_rgb(img)
+    RGB = split_rgb(img)
 
-    R_freqs = map_freqs(R)
-    R_codes = generate_codes(R_freqs)
-
-    G_freqs = map_freqs(G)
-    G_codes = generate_codes(G_freqs)
-
-    B_freqs = map_freqs(B)
-    B_codes = generate_codes(B_freqs)
+    for color in RGB:
+        freqs = map_freqs(color)
+        tree = generate_tree(freqs)
+        codes = generate_codes(tree)
+        print(codes)
     
     
 
@@ -48,7 +45,31 @@ def map_freqs(color_list):
 
 """
 """
-def generate_codes(freqs):
-    vals = list(freqs.keys())
-    vals.sort(key=lambda val: freqs[val])
-    
+def generate_tree(freqs):
+    tree = list(freqs.keys())
+    while (len(tree) > 1):
+        tree.sort(key=lambda val: freqs[val])
+        right = tree.pop(0)
+        left = tree.pop(0)
+        branch = (left, right)
+        freqs[branch] = freqs[left] + freqs[right]
+        del freqs[left], freqs[right]
+        tree.append(branch)
+
+    return tree[0]
+
+
+"""
+"""
+def generate_codes(tree):
+    codes = {}
+    for i in range(len(tree)):
+        if isinstance(tree[i], int):
+            codes |= {tree[i]: f"{i}"}
+        else:
+            subcodes = generate_codes(tree[i])
+            for key in subcodes.keys():
+                subcodes[key] = f"{i}{subcodes[key]}"
+                codes |= subcodes
+
+    return codes
