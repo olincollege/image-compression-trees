@@ -1,35 +1,24 @@
 from PIL import Image
+import json
 
 """
 """
 def encode_image(input_path, output_path):
     img = Image.open(input_path).convert('RGB')
+    dims = img.size
     pixels = img.getdata()
     rgb_vals = [color for rgb in pixels for color in rgb]
     
     freqs = map_freqs(rgb_vals)
     tree = generate_tree(freqs)
     codes = generate_codes(tree)
-    encoding = generate_encoded_string(rgb_vals, codes)
-    write_to_file(encoding, output_path)
-    
+    encoding, padding = generate_encoded_string(rgb_vals, codes)
+    byte_list = convert_to_bytes(encoding)
 
-"""
-"""
-def split_rgb(img):
-    width, height = img.size
-    pixels = img.load()
-    
-    [R, G, B] = [[] for i in range(3)]
+    metadata = generate_metadata_string(dims, padding, codes)
+    metadata_bytes = convert_to_bytes(metadata)
 
-    for x in range(width):
-        for y in range(height):
-            r, g, b = pixels[x,y]
-            R.append(r)
-            G.append(g)
-            B.append(b)
-
-    return R, G, B
+    write_to_file(byte_list, metadata_bytes, output_path)
 
 
 """
@@ -78,13 +67,49 @@ def generate_codes(tree):
 """
 """
 def generate_encoded_string(values, codes):
-    bits = ""
+    string = ""
     for value in values:
-        bits += codes[value]
-    return bits
+        string += codes[value]
+    padding = 8 - (len(string)%8)
+    string += '0'*padding
+    return string, padding
+
 
 """
 """
-def write_to_file(string, path):
-    with open(path, 'wt') as f:
-        f.write(string)
+def generate_metadata_string(dims, padding, codes):
+    codes_str = ""
+    for key in codes.keys():
+        codes_str += f",{key},{codes[key]}"
+    
+    string = f"{dims[0]},{dims[1]},{padding},{codes}"
+    b_string = ''.join(format(ord(char), '08b') for char in string)
+
+    padding = 8-(len(b_string)%8)
+    b_string = '0'*padding + b_string
+
+    return b_string
+
+
+"""
+"""
+def convert_to_bytes(string):
+    if len(string)%8 != 0:
+        raise ValueError("String not padded correctly")
+    
+    byte_list = []
+    for i in range(0, len(string), 8):
+        byte = string[i:i+8]
+        byte_list.append(int(byte, 2))
+
+    return bytes(byte_list)
+
+
+"""
+"""
+def write_to_file(byte_list, metadata, path):
+    separation_code = b'\xAA\xBB\xCC'
+    with open(path, 'wb') as f:
+        f.write(metadata)
+        f.write(separation_code)
+        f.write(byte_list)
