@@ -1,49 +1,19 @@
 """
-Takes in a .bin file and outputs an image
+Decodes a Huffman-compressed .bin file and saves the resulting image.
 """
 import ast
 from PIL import Image
 
-input_path = "data/7x7_compressed.bin"
 
-# open binary file
-with open(input_path, "rb") as file:
-    image_data = file.read()
-    # print(image_data)
-
-# print(type(image_data))
-
-# indicator string
-indicator_bytes = b'\xaa\xbb\xcc'
-
-keys_vals_end_index = image_data.find(indicator_bytes)
-metadata_keys_vals = image_data[:keys_vals_end_index]
-
-first_comma_index = metadata_keys_vals.find(b',')
-second_comma_index = metadata_keys_vals[first_comma_index+1:].find(b',')
-third_comma_index = metadata_keys_vals[first_comma_index+1+second_comma_index:].find(b',')
-leading_zeros_index = metadata_keys_vals.find(b'\x00')
-metadata = metadata_keys_vals[leading_zeros_index+len(b'\x00'):first_comma_index+1+second_comma_index+1+third_comma_index+1]
-img_width = int(metadata.split(b',')[0])
-img_height = int(metadata.split(b',')[1])
-padding = int(metadata.split(b',')[2])
-
-keys_vals = metadata_keys_vals[first_comma_index+1+second_comma_index+1+third_comma_index+1:]
-huffman_dict = ast.literal_eval(keys_vals.decode("utf-8"))
-print(huffman_dict)
-
-huffman_rgb_bytes = image_data[(keys_vals_end_index+len(indicator_bytes)):]
-
-huffman_rgb_binary = "".join(f"{byte:08b}" for byte in huffman_rgb_bytes)
-huffman_rgb_binary = huffman_rgb_binary[:len(huffman_rgb_binary)-padding]
-
-# tree that represents the huffman codes
 def build_huffman_tree(huffman_dict):
     """
     Builds a Huffman tree from a dictionary of Huffman codes.
 
     Args:
-        
+        huffman_dict (dict): mapping of values to Huffman codes.
+
+    Returns:
+        dict: nested dictionary representing the Huffman tree.
     """
     root = {}
 
@@ -73,14 +43,50 @@ def decode_huffman(huffman_binary, huffman_dict):
 
     return decoded_values
 
-pixels = decode_huffman(huffman_rgb_binary, huffman_dict)
-image = Image.new("RGB", (img_width, img_height))
-image_pixels = image.load()
 
-for x in range(img_width):
-    for y in range(img_height):
-        pixel_index = y*img_width + x
-        image_pixels[x,y] = (pixels[pixel_index*3], pixels[pixel_index*3+1], pixels[pixel_index*3+2])
+def decode_image(input_path, output_path):
+    """
+    Decode a Huffman-compressed image file and save the resulting image.
 
-image.save("data/7x7_decompressed.png")
-image.show()
+    Args:
+        input_path (str): path to the compressed .bin file.
+        output_path (str): path where the decoded image will be saved.
+    """
+    with open(input_path, "rb") as file:
+        image_data = file.read()
+
+    indicator_bytes = b'\xaa\xbb\xcc'
+    keys_vals_end_index = image_data.find(indicator_bytes)
+    if keys_vals_end_index == -1:
+        raise ValueError("Compressed image is missing its metadata separator")
+
+    metadata = image_data[:keys_vals_end_index].lstrip(b'\x00').decode("utf-8")
+    dictionary_start = metadata.find("{")
+    if dictionary_start == -1:
+        raise ValueError("Compressed image is missing its Huffman dictionary")
+
+    dimensions_and_padding = metadata[:dictionary_start].split(",")
+    if len(dimensions_and_padding) != 3:
+        raise ValueError("Compressed image has invalid dimensions or padding metadata")
+
+    img_width, img_height, padding = map(int, dimensions_and_padding)
+    huffman_dict = ast.literal_eval(metadata[dictionary_start:])
+
+    huffman_rgb_bytes = image_data[keys_vals_end_index + len(indicator_bytes):]
+    huffman_rgb_binary = "".join(f"{byte:08b}" for byte in huffman_rgb_bytes)
+    if padding:
+        huffman_rgb_binary = huffman_rgb_binary[:-padding]
+
+    pixels = decode_huffman(huffman_rgb_binary, huffman_dict)
+    expected_values = img_width * img_height * 3
+    if len(pixels) != expected_values:
+        raise ValueError(
+            f"Decoded {len(pixels)} color values; expected {expected_values}"
+        )
+
+    image = Image.new("RGB", (img_width, img_height))
+    image.putdata([
+        tuple(pixels[index:index + 3])
+        for index in range(0, len(pixels), 3)
+    ])
+    image.save(output_path)
