@@ -13,4 +13,4 @@ def generate_image(side_length, color_count):
         for j in range(side_length):
             pixels[i, j] = choice(colors)
 
-    image.save(f"data/{side_length}x{side_length}_{color_count}.png", format="png")
+    image.save(f"data/{side_length}x{side_length}_{color_count}.jpeg", format="jpeg")
