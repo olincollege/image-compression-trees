@@ -367,8 +367,8 @@ def compress_image_file(
         iterations: int = 20000,
         detail_error_threshold: float = 10):
 
-    image = Image.open(image_path)
-    image_data = np.array(image)
+    with Image.open(image_path) as image:
+        image_data = np.array(image.convert("RGB"))
 
     data = compress_and_encode_image_data(image_data, iterations, detail_error_threshold)
 
