@@ -3,6 +3,13 @@ from random import randrange, choice
 
 def generate_image(side_length, color_count):
     """
+    Generates and saves a square image with Pillow, with a specified side length and number of
+    colors. The colors are distributed randomly and in random amounts throughout the image.
+
+    Args:
+        side_length (int): the length of one of the square sides of the image.
+
+        color_count (int): the total number of colors present in the image.
     """
     colors = [tuple([randrange(256) for _ in range(3)]) for _ in range(color_count)]
 
