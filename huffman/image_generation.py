@@ -1,3 +1,7 @@
+"""
+Contains a function for generating a random image to use for testing.
+"""
+
 from PIL import Image
 from random import randrange, choice
 
@@ -20,4 +24,4 @@ def generate_image(side_length, color_count):
         for j in range(side_length):
             pixels[i, j] = choice(colors)
 
-    image.save(f"data/{side_length}x{side_length}_{color_count}.jpeg", format="jpeg")
+    image.save(f"data/{side_length}x{side_length}_{color_count}.jpeg", format="jpeg", quality=95, optimize=False)
