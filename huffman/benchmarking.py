@@ -4,23 +4,72 @@ with Huffman codes.
 """
 
 from encoding import encode_image
+from decoding import decode_image
 from image_generation import generate_image
 import os
 import time
 
-input_path = "data/1000x1000_100.png"
-output_path = "data/1000x1000_100_compressed.bin"
+def main():
+    """
+    """
+    with open('data/huffman_benchmarks.csv', 'w') as f:
+        f.write('Pixels,Colors,BeforeSize,BinSize,AfterSize,Runtime')
+    print('COLOR SWEEP')
+    for c in range(1000):
+        print(f'{c+1}/1000')
+        data = benchmark(100, c+1, 10)
+        with open('data/huffman_benchmarks.csv', 'a') as f:
+            f.write('\n' + ','.join(map(str, data)))
+    print('SIZE SWEEP')
+    for s in range(1000):
+        print(f'{s+1}/1000')
+        data = benchmark(s+3, 5, 10)
+        with open('data/huffman_benchmarks.csv', 'a') as f:
+                    f.write('\n' + ','.join(map(str, data)))
 
-repetitions = 1
-runtime = 0
-for _ in range(repetitions):
-    start_time = time.time()
-    encode_image(input_path, output_path)
-    runtime += time.time() - start_time
-runtime /= repetitions
 
-initial_size = os.path.getsize(input_path)
-compressed_size = os.path.getsize(output_path)
-ratio = initial_size/compressed_size
-print('Compression ratio:', ratio)
-print('Runtime:', runtime, 's')
+def benchmark(size, colors, repetitions):
+    """
+    """
+    # define paths
+    input_path = "data/test.jpeg"
+    output_bin_path = "data/test.bin"
+    output_image_path = "data/test_decompressed.jpeg"
+
+    # initialize tracker variables
+    runtime = 0
+    initial_size = 0
+    compressed_bin_size = 0
+    compressed_image_size = 0
+
+    for _ in range(repetitions):
+        # generate image
+        generate_image(size, colors, input_path)
+
+        # run encoding/decoding
+        start_time = time.time()
+        encode_image(input_path, output_bin_path)
+        decode_image(output_bin_path, output_image_path)
+
+        # add to trackers cumulatively
+        runtime += time.time() - start_time
+        initial_size += os.path.getsize(input_path)
+        compressed_bin_size += os.path.getsize(output_bin_path)
+        compressed_image_size += os.path.getsize(output_image_path)
+
+    # divide by repetitions to get averages
+    runtime /= repetitions
+    initial_size /= repetitions
+    compressed_bin_size /= repetitions
+    compressed_image_size /= repetitions
+
+    # compare ratios and runtime
+    print(initial_size/compressed_bin_size)
+    print(initial_size/compressed_image_size)
+    print()
+
+    return [size*size, colors, initial_size, compressed_bin_size, compressed_image_size, runtime]
+
+
+if __name__ == "__main__":
+    main()
