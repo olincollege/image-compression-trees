@@ -1,3 +1,8 @@
+"""
+Runs through an example of Huffman encoding, step by step, without saving the image.
+Primarily used for debugging and demonstration.
+"""
+
 from encoding import *
 from PIL import Image
 
