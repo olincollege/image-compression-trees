@@ -11,6 +11,7 @@ import time
 
 def main():
     """
+    Writes data to a csv file for color and size benchmarks.
     """
     with open('data/huffman_benchmarks.csv', 'w') as f:
         f.write('Pixels,Colors,BeforeSize,BinSize,AfterSize,Runtime')
@@ -30,6 +31,27 @@ def main():
 
 def benchmark(size, colors, repetitions):
     """
+    Finds the runtime and compression ratio for the compression of an image at
+    a particular size and with a particular number of colors. It repeats a trial
+    by a specified number of times to get a more reliable average value.
+
+    Args:
+        size (int): the length of one of the square sides of the image to compress.
+
+        colors (int): the total number of colors present in the image to compress.
+
+        repetitions (int): the number of repetitions of a trial, for the average count.
+    
+    Returns:
+        list: a list of numerical values representing information about the data in a particular
+        order. The order is as follows:
+        The total number of pixels in the image (int),
+        The number of colors in the image (int),
+        the size in bytes of the image to be compressed (double),
+        the size in bytes of the binary file of compressed data (double),
+        the size in bytes of the final encoded and decoded image (double),
+        the runtime of the process (double).
+
     """
     # define paths
     input_path = "data/test.jpeg"
